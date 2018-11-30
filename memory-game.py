@@ -125,29 +125,40 @@ class Board(QtWidgets.QMainWindow):
 		QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Right), self, self.on_right)
 		QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+Q'),            self, self.close)
 
-	def restore_after_unmatch(self):
+	def restore_after_unmatch(self, from_click=False):
 		rows = [mx[0] for mx in self.click_tracker]
 		cols = [my[1] for my in self.click_tracker]
 		for i in range(2):
+			if from_click and (rows[i],cols[i]) == self.move_tracker[-1][:2]:
+				continue
 			button = self.grid.itemAtPosition(rows[i], cols[i])
 			button.widget().toggle_card()
 		self.click_tracker.clear()
 
 	def check_match(self):
 		if len(self.click_tracker) == self.click_tracker.maxlen:
-			self.restore_after_unmatch()
+			self.restore_after_unmatch(from_click=True)
 			return
 
-		self.click_tracker.append(self.move_tracker.pop())
+		self.click_tracker.append(self.move_tracker[-1])
 		if len(self.click_tracker) == self.click_tracker.maxlen:
 			matches = [midx[2] for midx in self.click_tracker]
 			if len(set(matches)) == 1:
 				rows = [mx[0] for mx in self.click_tracker]
 				cols = [my[1] for my in self.click_tracker]
+				if (rows[0],cols[0]) == (rows[1],cols[1]):
+					return
 				for i in range(2):
 					button = self.grid.itemAtPosition(rows[i], cols[i])
 					button.widget().set_matched(True)
 				self.match_counter += 1
+				if self.match_counter == info.NUM_CARDS:
+					self.win()
+
+	def win(self):
+		reply = QtWidgets.QMessageBox.information(self, u'You win', 
+					u'PAPÃO CARALHO\n', QtWidgets.QMessageBox.Ok)
+		self.close()
 
 	def on_up(self):
 		self.move_focus(0, -1)
