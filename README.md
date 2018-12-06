@@ -25,5 +25,5 @@ pip install --upgrade numpy pyqt5
 
 ```
 cd path/to/memory-game
-python ./memory-game.py # for Ubuntu: python3 ./memory-game
+python ./memory-game.py # for Ubuntu: python3 ./memory-game.py
 ```
