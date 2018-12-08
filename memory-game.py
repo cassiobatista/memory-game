@@ -43,7 +43,7 @@ class Card(QtWidgets.QPushButton):
 				self.pos_state = False # down
 			else:
 				icon = self.face_icon
-				self.pos_state = True # up
+				self.pos_state = True  # up
 			self.setIcon(icon)
 			self.setIconSize(QtCore.QSize(75,75))
 
@@ -215,18 +215,19 @@ class Board(QtWidgets.QMainWindow):
 			new_col  = 0                 # limit the fucking top edge
 
 		button = self.grid.itemAtPosition(new_row, new_col)
-		if button is not None:
-			button.widget().setFocus()
-			button.widget().setStyleSheet(info.HOVER_FOCUS)
-			self.move_tracker.append(
-						(new_row, new_col, self.card_pairs[new_row][new_col][2]))
-			if info.DEGUB:
-				print(colored(list(self.move_tracker), 'red'), 
-							colored(list(self.click_tracker), 'green'))
-			if len(self.click_tracker) == self.click_tracker.maxlen:
-				self.restore_after_unmatch()
-		else:
-			return # FIXME
+		if button is None:
+			return
+
+		button.widget().setFocus()
+		button.widget().setStyleSheet(info.HOVER_FOCUS)
+		self.move_tracker.append(
+					(new_row, new_col, self.card_pairs[new_row][new_col][2]))
+		if info.DEGUB:
+			print(colored(list(self.move_tracker), 'red'), 
+						colored(list(self.click_tracker), 'green'))
+		if len(self.click_tracker) == self.click_tracker.maxlen:
+			self.restore_after_unmatch()
+
 
 if __name__=='__main__':
 	app = QtWidgets.QApplication(sys.argv)
