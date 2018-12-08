@@ -80,15 +80,15 @@ class Board(QtWidgets.QMainWindow):
 
 	def set_card_pairs(self):
 		all_pairs = []
-		for i in range(info.BOARD_SIZE):
-			for j in range(info.BOARD_SIZE):
+		for i in range(info.BOARD_ROWS):
+			for j in range(info.BOARD_COLS):
 				all_pairs.append((i,j))
 		np.random.shuffle(all_pairs)
 		
 		icon_idx = 0
-		self.card_pairs = np.empty((info.BOARD_SIZE,info.BOARD_SIZE), dtype=object)
-		for i in range(info.BOARD_SIZE):
-			for j in range(info.BOARD_SIZE):
+		self.card_pairs = np.empty((info.BOARD_ROWS,info.BOARD_COLS), dtype=object)
+		for i in range(info.BOARD_ROWS):
+			for j in range(info.BOARD_COLS):
 				if self.card_pairs[i][j] is None:
 					if (i,j) == all_pairs[0]:
 						r,c = all_pairs.pop(1)
@@ -102,8 +102,8 @@ class Board(QtWidgets.QMainWindow):
 	def draw_board(self):
 		question_icon_path = os.path.join(info.CARDS_DIR, 'question.png')
 		self.grid = QtWidgets.QGridLayout()
-		for i in range(info.BOARD_SIZE):
-			for j in range(info.BOARD_SIZE):
+		for i in range(info.BOARD_ROWS):
+			for j in range(info.BOARD_COLS):
 				face_icon_path = self.card_icon_paths[self.card_pairs[i][j]]
 				card = Card(self.card_pairs[i][j], face_icon_path, question_icon_path)
 				card.clicked.connect(self.check_match)
@@ -205,12 +205,12 @@ class Board(QtWidgets.QMainWindow):
 		new_row = r + dy
 		new_col = c + dx
 
-		if new_row   > info.BOARD_SIZE-1:
-			new_row  = info.BOARD_SIZE-1 # limit the fucking right edge
+		if new_row   > info.BOARD_ROWS-1:
+			new_row  = info.BOARD_ROWS-1 # limit the fucking right edge
 		elif new_row < 0:
 			new_row  = 0                 # limit the fucking left edge
-		if new_col   > info.BOARD_SIZE-1:
-			new_col  = info.BOARD_SIZE-1 # limit the fucking bottom edge
+		if new_col   > info.BOARD_COLS-1:
+			new_col  = info.BOARD_COLS-1 # limit the fucking bottom edge
 		elif new_col < 0:
 			new_col  = 0                 # limit the fucking top edge
 
