@@ -94,8 +94,8 @@ class Board(QtWidgets.QMainWindow):
 						r,c = all_pairs.pop(1)
 					else:
 						r,c = all_pairs.pop(0)
-					self.card_pairs[i][j] = (r, c, icon_idx)
-					self.card_pairs[r][c] = (i, j, icon_idx)
+					self.card_pairs[i][j] = icon_idx
+					self.card_pairs[r][c] = icon_idx
 					all_pairs.pop(all_pairs.index((i,j)))
 					icon_idx += 1
 
@@ -104,8 +104,8 @@ class Board(QtWidgets.QMainWindow):
 		self.grid = QtWidgets.QGridLayout()
 		for i in range(info.BOARD_SIZE):
 			for j in range(info.BOARD_SIZE):
-				face_icon_path = self.card_icon_paths[self.card_pairs[i][j][2]]
-				card = Card(self.card_pairs[i][j][2], face_icon_path, question_icon_path)
+				face_icon_path = self.card_icon_paths[self.card_pairs[i][j]]
+				card = Card(self.card_pairs[i][j], face_icon_path, question_icon_path)
 				card.clicked.connect(self.check_match)
 				self.grid.addWidget(card, i, j)
 
@@ -117,7 +117,7 @@ class Board(QtWidgets.QMainWindow):
 		# set cursor to the first element at the top-left corner
 		self.grid.itemAtPosition(0,0).widget().setFocus()
 		self.grid.itemAtPosition(0,0).widget().setStyleSheet(info.HOVER_FOCUS)
-		self.move_tracker.append((0, 0, self.card_pairs[0][0][2]))
+		self.move_tracker.append((0, 0, self.card_pairs[0][0]))
 
 		# create shortcuts for keyboard arrows
 		QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Up),    self, self.on_up)
@@ -221,7 +221,7 @@ class Board(QtWidgets.QMainWindow):
 		button.widget().setFocus()
 		button.widget().setStyleSheet(info.HOVER_FOCUS)
 		self.move_tracker.append(
-					(new_row, new_col, self.card_pairs[new_row][new_col][2]))
+					(new_row, new_col, self.card_pairs[new_row][new_col]))
 		if info.DEGUB:
 			print(colored(list(self.move_tracker), 'red'), 
 						colored(list(self.click_tracker), 'green'))
