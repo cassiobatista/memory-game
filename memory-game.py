@@ -125,6 +125,11 @@ class Board(QtWidgets.QMainWindow):
 		QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Left),  self, self.on_left)
 		QtWidgets.QShortcut(QtGui.QKeySequence(QtCore.Qt.Key_Right), self, self.on_right)
 		QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+Q'),            self, self.close)
+		QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+I'),            self, self.about)
+
+	def about(self):
+		QtWidgets.QMessageBox.information(self, u'About', info.INFO)
+		return
 
 	def restore_after_unmatch(self, from_click=False):
 		if info.DEGUB:
@@ -233,6 +238,7 @@ if __name__=='__main__':
 	app = QtWidgets.QApplication(sys.argv)
 	window = Board()
 	window.move(300,50)
+	window.setWindowTitle(info.WINDOW_TITLE)
 	window.show()
 	sys.exit(app.exec_())
 ### EOF ###
