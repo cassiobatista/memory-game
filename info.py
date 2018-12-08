@@ -1,5 +1,7 @@
 import os
 
+DEGUB = False
+
 CARDS_DIR = os.path.join('.', 'cards')
 BOARD_SIZE = 4 # an even number is required
 NUM_CARDS  = BOARD_SIZE**2//2
@@ -12,3 +14,6 @@ HOVER_FOCUS = \
 	'    background: black; ' + \
 	'    color: white; '      + \
 	'}'
+
+WIN_MSG = \
+	u'Parabéns, você ganhou.'

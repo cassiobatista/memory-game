@@ -12,6 +12,7 @@ import numpy as np
 
 from collections import deque
 from PyQt5 import QtWidgets, QtGui, QtCore
+from termcolor import colored
 
 import info
 
@@ -71,8 +72,8 @@ class Board(QtWidgets.QMainWindow):
 		if np.random.choice((True,False)):
 			self.card_type = 'monsters'
 		icon_folder = os.path.join(info.CARDS_DIR, self.card_type)
-		filenames = list(np.random.choice(os.listdir(
-					os.path.join(icon_folder)), info.NUM_CARDS, replace=False))
+		filenames = np.random.choice(os.listdir(os.path.join(icon_folder)),
+					info.NUM_CARDS, replace=False)
 		self.card_icon_paths = []
 		for f in filenames:
 			self.card_icon_paths.append(os.path.join(icon_folder, f))
@@ -126,6 +127,8 @@ class Board(QtWidgets.QMainWindow):
 		QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+Q'),            self, self.close)
 
 	def restore_after_unmatch(self, from_click=False):
+		if info.DEGUB:
+			print('resto', end=' ')
 		rows = [mx[0] for mx in self.click_tracker]
 		cols = [my[1] for my in self.click_tracker]
 		for i in range(2):
@@ -134,8 +137,14 @@ class Board(QtWidgets.QMainWindow):
 			button = self.grid.itemAtPosition(rows[i], cols[i])
 			button.widget().toggle_card()
 		self.click_tracker.clear()
+		if info.DEGUB:
+			print(colored(list(self.move_tracker), 'red'), 
+						colored(list(self.click_tracker), 'green'))
 
 	def check_match(self):
+		if info.DEGUB:
+			print('pres1', colored(list(self.move_tracker), 'red'), 
+						colored(list(self.click_tracker), 'green'))
 		if len(self.click_tracker) == self.click_tracker.maxlen:
 			self.restore_after_unmatch(from_click=True)
 			return
@@ -147,6 +156,7 @@ class Board(QtWidgets.QMainWindow):
 				rows = [mx[0] for mx in self.click_tracker]
 				cols = [my[1] for my in self.click_tracker]
 				if (rows[0],cols[0]) == (rows[1],cols[1]):
+					self.click_tracker.clear()
 					return
 				for i in range(2):
 					button = self.grid.itemAtPosition(rows[i], cols[i])
@@ -154,23 +164,34 @@ class Board(QtWidgets.QMainWindow):
 				self.match_counter += 1
 				if self.match_counter == info.NUM_CARDS:
 					self.win()
+		if info.DEGUB:
+			print('pres2', colored(list(self.move_tracker), 'red'), 
+						colored(list(self.click_tracker), 'green'))
 
 	def win(self):
-		reply = QtWidgets.QMessageBox.information(self, u'You win', 
-					u'PAPÃO CARALHO\n', QtWidgets.QMessageBox.Ok)
+		reply = QtWidgets.QMessageBox.information(self, 
+					u'You win', info.WIN_MSG, QtWidgets.QMessageBox.Ok)
 		self.close()
 
 	def on_up(self):
+		if info.DEGUB:
+			print('   up', end=' ')
 		self.move_focus(0, -1)
 
 	def on_down(self):
-		self.move_focus(0, 1)
+		if info.DEGUB:
+			print(' down', end=' ')
+		self.move_focus(0, +1)
 
 	def on_left(self):
+		if info.DEGUB:
+			print(' left', end=' ')
 		self.move_focus(-1, 0)
 
 	def on_right(self):
-		self.move_focus(1, 0)
+		if info.DEGUB:
+			print('right', end=' ')
+		self.move_focus(+1, 0)
 
 	def move_focus(self, dx, dy):
 		if QtWidgets.qApp.focusWidget() == 0:
@@ -199,6 +220,9 @@ class Board(QtWidgets.QMainWindow):
 			button.widget().setStyleSheet(info.HOVER_FOCUS)
 			self.move_tracker.append(
 						(new_row, new_col, self.card_pairs[new_row][new_col][2]))
+			if info.DEGUB:
+				print(colored(list(self.move_tracker), 'red'), 
+							colored(list(self.click_tracker), 'green'))
 			if len(self.click_tracker) == self.click_tracker.maxlen:
 				self.restore_after_unmatch()
 		else:
