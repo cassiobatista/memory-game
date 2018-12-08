@@ -36,6 +36,14 @@ class Card(QtWidgets.QPushButton):
 		# make sure card starts face down
 		self.toggle_card()
 
+	# https://stackoverflow.com/questions/20722823/qt-get-mouse-pressed-event-even-if-a-button-is-pressed
+	def mousePressEvent(self, ev):
+		QtWidgets.QMessageBox.warning(self, u'Eita', u'Não usa o mouse, caralho')
+		print('cliquei')
+
+	def mouseReleaseEvent(self, ev):
+		print('soltei')
+
 	def toggle_card(self):
 		if not self.is_matched():
 			if self.is_up() is None or self.is_up() == True:
