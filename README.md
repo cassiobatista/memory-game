@@ -16,7 +16,7 @@ sudo -H pip3 install --upgrade numpy pyqt5 termcolor
 ```
 python -m pip install --upgrade pip
 ```     
-- Again at the console, use the `pip` tool to download and/or upgrade `Numpy` and `PyQt5`:     
+- Again at the console, use the `pip` tool to download and/or upgrade `Numpy`, `PyQt5` and `termcolor`:     
 ```
 pip install --upgrade numpy pyqt5 termcolor
 ```
