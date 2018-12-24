@@ -177,10 +177,11 @@ class Board(QtWidgets.QMainWindow):
 					button = self.grid.itemAtPosition(rows[i], cols[i])
 					button.widget().set_matched(True)
 				self.match_counter += 1
-				self.wav = sound.MATCH
-				threading.Thread(target=self.play, args=(1.5,)).start()
 				if self.match_counter == config.NUM_CARDS:
 					self.win()
+				else:
+					self.wav = sound.MATCH
+					threading.Thread(target=self.play, args=(1.5,)).start()
 			else:
 				self.wav = sound.UNMATCH
 				threading.Thread(target=self.play, args=(1.0,)).start()
@@ -189,6 +190,8 @@ class Board(QtWidgets.QMainWindow):
 						colored(list(self.click_tracker), 'green'))
 
 	def close(self):
+		if self.stream is not None and self.stream.is_active():
+			self.stream.stop_stream()
 		sound.MOVE.close()
 		sound.OUTBOUND.close()
 		sound.MATCH.close()
@@ -199,7 +202,7 @@ class Board(QtWidgets.QMainWindow):
 
 	def win(self):
 		self.wav = sound.WIN
-		threading.Thread(target=self.play, args=(1.5,)).start()
+		threading.Thread(target=self.play, args=(1.0,)).start()
 		reply = QtWidgets.QMessageBox.information(self, 
 					u'You win', config.WIN_MSG, QtWidgets.QMessageBox.Ok)
 		self.close()
