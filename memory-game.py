@@ -8,13 +8,16 @@
 import sys
 import os
 import time
+import pyaudio
 import numpy as np
 
+import threading 
 from collections import deque
 from PyQt5 import QtWidgets, QtGui, QtCore
 from termcolor import colored
 
-import info
+import config
+import sound
 
 class Card(QtWidgets.QPushButton):
 	def __init__(self, icon_index, face_icon_path, back_icon_path):
@@ -39,10 +42,6 @@ class Card(QtWidgets.QPushButton):
 	# https://stackoverflow.com/questions/20722823/qt-get-mouse-pressed-event-even-if-a-button-is-pressed
 	def mousePressEvent(self, ev):
 		QtWidgets.QMessageBox.warning(self, u'Eita', u'Não usa o mouse, caralho')
-		print('cliquei')
-
-	def mouseReleaseEvent(self, ev):
-		print('soltei')
 
 	def toggle_card(self):
 		if not self.is_matched():
@@ -71,32 +70,32 @@ class Board(QtWidgets.QMainWindow):
 		self.click_tracker = deque(maxlen=2)
 		self.move_tracker  = deque(maxlen=2)
 
+		self.stream = None
+
 		self.load_card_icons()
 		self.set_card_pairs()
 		self.draw_board()
 
 	def load_card_icons(self):
-		self.card_type = 'animals'
-		if np.random.choice((True,False)):
-			self.card_type = 'monsters'
-		icon_folder = os.path.join(info.CARDS_DIR, self.card_type)
+		icon_folder = os.path.join(config.ICONS_DIR)
 		filenames = np.random.choice(os.listdir(os.path.join(icon_folder)),
-					info.NUM_CARDS, replace=False)
+					config.NUM_CARDS, replace=False)
 		self.card_icon_paths = []
 		for f in filenames:
 			self.card_icon_paths.append(os.path.join(icon_folder, f))
 
 	def set_card_pairs(self):
 		all_pairs = []
-		for i in range(info.BOARD_ROWS):
-			for j in range(info.BOARD_COLS):
+		for i in range(config.BOARD_ROWS):
+			for j in range(config.BOARD_COLS):
 				all_pairs.append((i,j))
 		np.random.shuffle(all_pairs)
 		
 		icon_idx = 0
-		self.card_pairs = np.empty((info.BOARD_ROWS,info.BOARD_COLS), dtype=object)
-		for i in range(info.BOARD_ROWS):
-			for j in range(info.BOARD_COLS):
+		self.card_pairs = np.empty((config.BOARD_ROWS,config.BOARD_COLS), dtype=object)
+		# FIXME
+		for i in range(config.BOARD_ROWS):
+			for j in range(config.BOARD_COLS):
 				if self.card_pairs[i][j] is None:
 					if (i,j) == all_pairs[0]:
 						r,c = all_pairs.pop(1)
@@ -108,10 +107,10 @@ class Board(QtWidgets.QMainWindow):
 					icon_idx += 1
 
 	def draw_board(self):
-		question_icon_path = os.path.join(info.CARDS_DIR, 'question.png')
+		question_icon_path = os.path.join(config.RESOURCES_DIR, 'question.png')
 		self.grid = QtWidgets.QGridLayout()
-		for i in range(info.BOARD_ROWS):
-			for j in range(info.BOARD_COLS):
+		for i in range(config.BOARD_ROWS):
+			for j in range(config.BOARD_COLS):
 				face_icon_path = self.card_icon_paths[self.card_pairs[i][j]]
 				card = Card(self.card_pairs[i][j], face_icon_path, question_icon_path)
 				card.clicked.connect(self.check_match)
@@ -124,7 +123,7 @@ class Board(QtWidgets.QMainWindow):
 
 		# set cursor to the first element at the top-left corner
 		self.grid.itemAtPosition(0,0).widget().setFocus()
-		self.grid.itemAtPosition(0,0).widget().setStyleSheet(info.HOVER_FOCUS)
+		self.grid.itemAtPosition(0,0).widget().setStyleSheet(config.HOVER_FOCUS)
 		self.move_tracker.append((0, 0, self.card_pairs[0][0]))
 
 		# create shortcuts for keyboard arrows
@@ -136,11 +135,11 @@ class Board(QtWidgets.QMainWindow):
 		QtWidgets.QShortcut(QtGui.QKeySequence('Ctrl+I'),            self, self.about)
 
 	def about(self):
-		QtWidgets.QMessageBox.information(self, u'About', info.INFO)
+		QtWidgets.QMessageBox.information(self, u'About', config.INFO)
 		return
 
 	def restore_after_unmatch(self, from_click=False):
-		if info.DEGUB:
+		if config.DEGUB:
 			print('resto', end=' ')
 		rows = [mx[0] for mx in self.click_tracker]
 		cols = [my[1] for my in self.click_tracker]
@@ -150,16 +149,28 @@ class Board(QtWidgets.QMainWindow):
 			button = self.grid.itemAtPosition(rows[i], cols[i])
 			button.widget().toggle_card()
 		self.click_tracker.clear()
-		if info.DEGUB:
+		if config.DEGUB:
 			print(colored(list(self.move_tracker), 'red'), 
 						colored(list(self.click_tracker), 'green'))
 
 	def check_match(self):
-		if info.DEGUB:
+		if config.DEGUB:
 			print('pres1', colored(list(self.move_tracker), 'red'), 
 						colored(list(self.click_tracker), 'green'))
 		if len(self.click_tracker) == self.click_tracker.maxlen:
 			self.restore_after_unmatch(from_click=True)
+			if self.stream is not None and self.stream.is_active():
+				self.stream.stop_stream()
+				sound.MOVE.rewind()
+			sound.WAVE = sound.MOVE
+			self.stream = sound.p.open(
+						format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
+						channels=sound.WAVE.getnchannels(),
+						rate=sound.WAVE.getframerate()*2,
+						output=True,
+						stream_callback=sound.callback)
+			t = threading.Thread(target=self.play)
+			t.start()
 			return
 
 		self.click_tracker.append(self.move_tracker[-1])
@@ -170,39 +181,98 @@ class Board(QtWidgets.QMainWindow):
 				cols = [my[1] for my in self.click_tracker]
 				if (rows[0],cols[0]) == (rows[1],cols[1]):
 					self.click_tracker.clear()
+					if self.stream is not None and self.stream.is_active():
+						self.stream.stop_stream()
+					sound.UNMATCH.rewind()
+					sound.WAVE = sound.UNMATCH
+					self.stream = sound.p.open(
+								format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
+								channels=sound.WAVE.getnchannels(),
+								rate=sound.WAVE.getframerate(),
+								output=True,
+								stream_callback=sound.callback)
+					t = threading.Thread(target=self.play)
+					t.start()
 					return
 				for i in range(2):
 					button = self.grid.itemAtPosition(rows[i], cols[i])
 					button.widget().set_matched(True)
 				self.match_counter += 1
-				if self.match_counter == info.NUM_CARDS:
+				if self.stream is not None and self.stream.is_active():
+					self.stream.stop_stream()
+				sound.MATCH.rewind()
+				sound.WAVE = sound.MATCH
+				self.stream = sound.p.open(
+							format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
+							channels=sound.WAVE.getnchannels(),
+							rate=sound.WAVE.getframerate(),
+							output=True,
+							stream_callback=sound.callback)
+				t = threading.Thread(target=self.play)
+				t.start()
+				if self.match_counter == config.NUM_CARDS:
 					self.win()
-		if info.DEGUB:
+			else:
+				if self.stream is not None and self.stream.is_active():
+					self.stream.stop_stream()
+				sound.UNMATCH.rewind()
+				sound.WAVE = sound.UNMATCH
+				self.stream = sound.p.open(
+							format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
+							channels=sound.WAVE.getnchannels(),
+							rate=sound.WAVE.getframerate(),
+							output=True,
+							stream_callback=sound.callback)
+				t = threading.Thread(target=self.play)
+				t.start()
+		if config.DEGUB:
 			print('pres2', colored(list(self.move_tracker), 'red'), 
 						colored(list(self.click_tracker), 'green'))
 
+	def close(self):
+		sound.MOVE.close()
+		sound.OUTBOUND.close()
+		sound.MATCH.close()
+		sound.UNMATCH.close()
+		sound.WIN.close()
+		sound.p.terminate()
+		QtWidgets.qApp.quit()
+
 	def win(self):
+		if self.stream is not None and self.stream.is_active():
+			self.stream.stop_stream()
+			sound.MOVE.rewind()
+			sound.OUTBOUND.rewind()
+		sound.WAVE = sound.WIN
+		self.stream = sound.p.open(
+					format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
+					channels=sound.WAVE.getnchannels(),
+					rate=sound.WAVE.getframerate(),
+					output=True,
+					stream_callback=sound.callback)
+		t = threading.Thread(target=self.play)
+		t.start()
 		reply = QtWidgets.QMessageBox.information(self, 
-					u'You win', info.WIN_MSG, QtWidgets.QMessageBox.Ok)
+					u'You win', config.WIN_MSG, QtWidgets.QMessageBox.Ok)
 		self.close()
 
 	def on_up(self):
-		if info.DEGUB:
+		if config.DEGUB:
 			print('   up', end=' ')
 		self.move_focus(0, -1)
 
 	def on_down(self):
-		if info.DEGUB:
+		if config.DEGUB:
 			print(' down', end=' ')
 		self.move_focus(0, +1)
 
 	def on_left(self):
-		if info.DEGUB:
+		if config.DEGUB:
 			print(' left', end=' ')
 		self.move_focus(-1, 0)
 
 	def on_right(self):
-		if info.DEGUB:
+		if config.DEGUB:
 			print('right', end=' ')
 		self.move_focus(+1, 0)
 
@@ -218,35 +288,75 @@ class Board(QtWidgets.QMainWindow):
 		new_row = r + dy
 		new_col = c + dx
 
-		if new_row   > info.BOARD_ROWS-1:
-			new_row  = info.BOARD_ROWS-1 # limit the fucking right edge
+		play_sound = True
+
+		if new_row   > config.BOARD_ROWS-1:
+			new_row  = config.BOARD_ROWS-1 # limit the fucking right edge
+			play_sound = False
 		elif new_row < 0:
-			new_row  = 0                 # limit the fucking left edge
-		if new_col   > info.BOARD_COLS-1:
-			new_col  = info.BOARD_COLS-1 # limit the fucking bottom edge
+			new_row  = 0                   # limit the fucking left edge
+			play_sound = False
+
+		if new_col   > config.BOARD_COLS-1:
+			new_col  = config.BOARD_COLS-1 # limit the fucking bottom edge
+			play_sound = False
 		elif new_col < 0:
-			new_col  = 0                 # limit the fucking top edge
+			new_col  = 0                   # limit the fucking top edge
+			play_sound = False
+
+		if self.stream is not None and self.stream.is_active():
+			self.stream.stop_stream()
+			sound.MOVE.rewind()
+			sound.OUTBOUND.rewind()
+
+		if play_sound:
+			sound.WAVE = sound.MOVE
+		else:
+			sound.WAVE = sound.OUTBOUND
+
+		self.stream = sound.p.open(
+					format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
+					channels=sound.WAVE.getnchannels(),
+					rate=sound.WAVE.getframerate()*2,
+					output=True,
+					stream_callback=sound.callback)
+
+		t = threading.Thread(target=self.play)
+		t.start()
 
 		button = self.grid.itemAtPosition(new_row, new_col)
 		if button is None:
 			return
 
 		button.widget().setFocus()
-		button.widget().setStyleSheet(info.HOVER_FOCUS)
+		button.widget().setStyleSheet(config.HOVER_FOCUS)
 		self.move_tracker.append(
 					(new_row, new_col, self.card_pairs[new_row][new_col]))
-		if info.DEGUB:
+		if config.DEGUB:
 			print(colored(list(self.move_tracker), 'red'), 
 						colored(list(self.click_tracker), 'green'))
 		if len(self.click_tracker) == self.click_tracker.maxlen:
 			self.restore_after_unmatch()
+
+	def play(self):
+		self.stream.start_stream()
+		while self.stream is not None and self.stream.is_active():
+			time.sleep(0.05)
+
+		if self.stream is not None:
+			self.stream.stop_stream()
+			self.stream.close()
+			self.stream = None
+
+		sound.MOVE.rewind()
+		sound.OUTBOUND.rewind()
 
 
 if __name__=='__main__':
 	app = QtWidgets.QApplication(sys.argv)
 	window = Board()
 	window.move(300,50)
-	window.setWindowTitle(info.WINDOW_TITLE)
+	window.setWindowTitle(config.WINDOW_TITLE)
 	window.show()
 	sys.exit(app.exec_())
 ### EOF ###

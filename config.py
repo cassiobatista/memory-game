@@ -2,12 +2,14 @@ import os
 
 DEGUB = False
 
-CARDS_DIR = os.path.join('.', 'cards')
+ICONS_DIR      = os.path.join('.', 'icons')
+RESOURCES_DIR  = os.path.join('.', 'res')
+
 BOARD_ROWS = 3 
 BOARD_COLS = 4
-NUM_CARDS    = BOARD_COLS*BOARD_ROWS//2
+NUM_CARDS  = BOARD_COLS * BOARD_ROWS // 2
 
-assert BOARD_COLS*BOARD_ROWS > 0, 'board dimensions must be a positive number, asshole'
+assert BOARD_COLS*BOARD_ROWS > 0, 'board dimensions must be positive, asshole'
 assert BOARD_COLS*BOARD_ROWS % 2 == 0, 'board dimensions must be even, dumbass'
 
 HOVER_FOCUS = \
@@ -22,7 +24,7 @@ WIN_MSG = \
 WINDOW_TITLE = \
 	u'Memory Game in Python 3!'
 
-INFO =  WINDOW_TITLE + '<br>' \
+INFO = WINDOW_TITLE + '<br>' \
 		u'<br>' + \
 		u'Author(s):' + \
 		u'<br>' + \
