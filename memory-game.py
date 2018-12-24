@@ -41,7 +41,7 @@ class Card(QtWidgets.QPushButton):
 
 	# https://stackoverflow.com/questions/20722823/qt-get-mouse-pressed-event-even-if-a-button-is-pressed
 	def mousePressEvent(self, ev):
-		QtWidgets.QMessageBox.warning(self, u'Eita', u'Não usa o mouse, caralho')
+		QtWidgets.QMessageBox.warning(self, u'Mouse device', config.MOUSE_ERROR_MSG)
 
 	def toggle_card(self):
 		if not self.is_matched():

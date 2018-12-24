@@ -31,6 +31,10 @@ WINDOW_TITLE = \
 	u'Jogo da Memória em Python 3!' if PT_BR else \
 	u'Memory Game in Python 3!'
 
+MOUSE_ERROR_MSG = \
+	u'Por favor, ao invés de utilizar o mouse, utilize somente o teclado.' if PT_BR else \
+	u'Please, do not use the mouse, use only the keyboard instead.'
+
 INFO = WINDOW_TITLE + '<br>' \
 		u'<br>' + \
 		(u'Autor(es):' if PT_BR else u'Author(s):') + \
