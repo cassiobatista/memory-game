@@ -205,7 +205,7 @@ class Board(QtWidgets.QMainWindow):
 				self.stream = sound.p.open(
 							format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
 							channels=sound.WAVE.getnchannels(),
-							rate=sound.WAVE.getframerate(),
+							rate=int(sound.WAVE.getframerate()*1.5),
 							output=True,
 							stream_callback=sound.callback)
 				t = threading.Thread(target=self.play)
