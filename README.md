@@ -7,7 +7,7 @@ Memory Game in Python 3
 ```
 sudo apt-get install python3 python3-pip
 sudo -H pip3 install --upgrade pip
-sudo -H pip3 install --upgrade numpy pyqt5 termcolor
+sudo -H pip3 install --upgrade numpy pyqt5 termcolor pyaudio
 ```
 
 ### Windows 10
@@ -16,9 +16,10 @@ sudo -H pip3 install --upgrade numpy pyqt5 termcolor
 ```
 python -m pip install --upgrade pip
 ```     
-- Again at the console, use the `pip` tool to download and/or upgrade `Numpy`, `PyQt5` and `termcolor`:     
+- Again at the console, use the `pip` tool to download and/or upgrade `Numpy`,
+  `PyQt5`, `PyAudio` and `termcolor`:     
 ```
-pip install --upgrade numpy pyqt5 termcolor
+pip install --upgrade numpy pyqt5 termcolor pyaudio
 ```
 
 ## Execution
