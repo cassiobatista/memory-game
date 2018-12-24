@@ -159,18 +159,8 @@ class Board(QtWidgets.QMainWindow):
 						colored(list(self.click_tracker), 'green'))
 		if len(self.click_tracker) == self.click_tracker.maxlen:
 			self.restore_after_unmatch(from_click=True)
-			if self.stream is not None and self.stream.is_active():
-				self.stream.stop_stream()
-				sound.MOVE.rewind()
-			sound.WAVE = sound.MOVE
-			self.stream = sound.p.open(
-						format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
-						channels=sound.WAVE.getnchannels(),
-						rate=sound.WAVE.getframerate()*2,
-						output=True,
-						stream_callback=sound.callback)
-			t = threading.Thread(target=self.play)
-			t.start()
+			self.wav = sound.MOVE
+			threading.Thread(target=self.play, args=(2.0)).start()
 			return
 
 		self.click_tracker.append(self.move_tracker[-1])
@@ -181,50 +171,19 @@ class Board(QtWidgets.QMainWindow):
 				cols = [my[1] for my in self.click_tracker]
 				if (rows[0],cols[0]) == (rows[1],cols[1]):
 					self.click_tracker.clear()
-					if self.stream is not None and self.stream.is_active():
-						self.stream.stop_stream()
-					sound.UNMATCH.rewind()
-					sound.WAVE = sound.UNMATCH
-					self.stream = sound.p.open(
-								format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
-								channels=sound.WAVE.getnchannels(),
-								rate=sound.WAVE.getframerate(),
-								output=True,
-								stream_callback=sound.callback)
-					t = threading.Thread(target=self.play)
-					t.start()
+					threading.Thread(target=self.play, args=(sound.UNMATCH, 1.0,)).start()
 					return
 				for i in range(2):
 					button = self.grid.itemAtPosition(rows[i], cols[i])
 					button.widget().set_matched(True)
 				self.match_counter += 1
-				if self.stream is not None and self.stream.is_active():
-					self.stream.stop_stream()
-				sound.MATCH.rewind()
-				sound.WAVE = sound.MATCH
-				self.stream = sound.p.open(
-							format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
-							channels=sound.WAVE.getnchannels(),
-							rate=int(sound.WAVE.getframerate()*1.5),
-							output=True,
-							stream_callback=sound.callback)
-				t = threading.Thread(target=self.play)
-				t.start()
+				self.wav = sound.MATCH
+				threading.Thread(target=self.play, args=(1.5,)).start()
 				if self.match_counter == config.NUM_CARDS:
 					self.win()
 			else:
-				if self.stream is not None and self.stream.is_active():
-					self.stream.stop_stream()
-				sound.UNMATCH.rewind()
-				sound.WAVE = sound.UNMATCH
-				self.stream = sound.p.open(
-							format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
-							channels=sound.WAVE.getnchannels(),
-							rate=sound.WAVE.getframerate(),
-							output=True,
-							stream_callback=sound.callback)
-				t = threading.Thread(target=self.play)
-				t.start()
+				self.wav = sound.UNMATCH
+				threading.Thread(target=self.play, args=(1.0,)).start()
 		if config.DEGUB:
 			print('pres2', colored(list(self.move_tracker), 'red'), 
 						colored(list(self.click_tracker), 'green'))
@@ -239,19 +198,8 @@ class Board(QtWidgets.QMainWindow):
 		QtWidgets.qApp.quit()
 
 	def win(self):
-		if self.stream is not None and self.stream.is_active():
-			self.stream.stop_stream()
-			sound.MOVE.rewind()
-			sound.OUTBOUND.rewind()
-		sound.WAVE = sound.WIN
-		self.stream = sound.p.open(
-					format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
-					channels=sound.WAVE.getnchannels(),
-					rate=sound.WAVE.getframerate(),
-					output=True,
-					stream_callback=sound.callback)
-		t = threading.Thread(target=self.play)
-		t.start()
+		self.wav = sound.WIN
+		threading.Thread(target=self.play, args=(1.5,)).start()
 		reply = QtWidgets.QMessageBox.information(self, 
 					u'You win', config.WIN_MSG, QtWidgets.QMessageBox.Ok)
 		self.close()
@@ -310,19 +258,10 @@ class Board(QtWidgets.QMainWindow):
 			sound.OUTBOUND.rewind()
 
 		if play_sound:
-			sound.WAVE = sound.MOVE
+			self.wav = sound.MOVE
 		else:
-			sound.WAVE = sound.OUTBOUND
-
-		self.stream = sound.p.open(
-					format=sound.p.get_format_from_width(sound.WAVE.getsampwidth()),
-					channels=sound.WAVE.getnchannels(),
-					rate=sound.WAVE.getframerate()*2,
-					output=True,
-					stream_callback=sound.callback)
-
-		t = threading.Thread(target=self.play)
-		t.start()
+			self.wav = sound.OUTBOUND
+		threading.Thread(target=self.play, args=(2.0,)).start()
 
 		button = self.grid.itemAtPosition(new_row, new_col)
 		if button is None:
@@ -338,7 +277,16 @@ class Board(QtWidgets.QMainWindow):
 		if len(self.click_tracker) == self.click_tracker.maxlen:
 			self.restore_after_unmatch()
 
-	def play(self):
+	def play(self, freq_factor):
+		self.wav.rewind()
+		if self.stream is not None and self.stream.is_active():
+			self.stream.stop_stream()
+		self.stream = sound.p.open(
+					format=sound.p.get_format_from_width(self.wav.getsampwidth()),
+					channels=self.wav.getnchannels(),
+					rate=int(self.wav.getframerate()*freq_factor),
+					output=True,
+					stream_callback=self.callback)
 		self.stream.start_stream()
 		while self.stream is not None and self.stream.is_active():
 			time.sleep(0.05)
@@ -348,9 +296,9 @@ class Board(QtWidgets.QMainWindow):
 			self.stream.close()
 			self.stream = None
 
-		sound.MOVE.rewind()
-		sound.OUTBOUND.rewind()
-
+	def callback(self, in_data, frame_count, time_info, status):
+		data = self.wav.readframes(frame_count)
+		return (data, pyaudio.paContinue)
 
 if __name__=='__main__':
 	app = QtWidgets.QApplication(sys.argv)
