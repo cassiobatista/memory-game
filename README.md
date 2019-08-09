@@ -1,11 +1,12 @@
 # Memory Game in Python 3!
-Memory Game in Python 3
+
+![demo](./doc/demo.gif)
 
 ## Pre-requisites
 
 ### Ubuntu 16.04 LTS
 ```
-sudo apt-get install python3 python3-pip
+sudo apt-get install python3 python3-pip portaudio
 sudo -H pip3 install --upgrade pip
 sudo -H pip3 install --upgrade numpy pyqt5 termcolor pyaudio
 ```
